@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Process 1 ONLY: Wi-Fi model downloads (WorkManager). Process 2 has ZERO internet by kernel UID isolation. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Play-compliant launchable user app query (avoids broad QUERY_ALL_PACKAGES scraping) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".AegisApplication"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AegisObsidian">
+
+        <!-- PROCESS 1: Trusted App & Security Shell (com.aegis.core) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Persistent Lightweight (~45 MB) Foreground Service for OEM Battery-Killer Survival & Screen Share -->
+        <service
+            android:name=".overlay.AegisOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse|mediaProjection">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Privacy-first on-device AI floating command bar and instant kill switch" />
+        </service>
+
+        <!-- DOM-First Accessibility Action Runner (strictly gated by Rust Ed25519 Capability Tokens) -->
+        <service
+            android:name="com.aegis.hands.AegisAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/aegis_accessibility_config" />
+        </service>
+
+        <!-- PROCESS 2: Untrusted AI Brain (Kernel Sandbox: ZERO Internet, ZERO Storage Path, ZERO Clipboard) -->
+        <service
+            android:name="com.aegis.brain.IsolatedBrainService"
+            android:exported="false"
+            android:isolatedProcess="true"
+            android:process=":aegis_brain_isolated" />
+    </application>
+</manifest>

@@ -1,0 +1,60 @@
+# Build outputs & Gradle / Android caches
+.gradle/
+.kotlin/
+.cxx/
+**/build/
+**/.cxx/
+local.properties
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# IDE & OS metadata
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+
+# Signing keys & secrets
+*.keystore
+*.jks
+*.p12
+*.pem
+.env
+.env.*
+
+# Rust artifacts
+rust-broker/target/
+**/*.rs.bk
+
+# Python caches & virtualenvs
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Native test binaries & third-party upstream llama.cpp (reproduced via scripts/setup_llama_cpp.*)
+android-app/app/src/main/cpp/test_brain_engine
+android-app/app/src/main/cpp/test_brain_engine.exe
+android-app/app/src/main/cpp/third_party/llama.cpp/
+*.o
+*.a
+
+# Large model weights (keep bundled 1.95 MB Guard-2M binary)
+*.gguf
+*.onnx
+*.tflite
+*.safetensors
+*.pt
+*.pth
+*.bin
+!android-app/app/src/main/assets/aegis_guard_2m.bin
+!android-app/gradle/wrapper/gradle-wrapper.jar

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lumen</string>
+    <string name="aegis_accessibility_description">Lumen Vision-First Security Runner (strictly gated by Rust Ed25519 capability tokens, Level 0 financial blocks, and Volume-Down emergency kill switch).</string>
+</resources>

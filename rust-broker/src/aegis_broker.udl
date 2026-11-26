@@ -1,0 +1,118 @@
+namespace aegis_broker {
+    [Throws=BrokerError]
+    AegisBroker create_broker(string db_path, string vault_key_hex);
+};
+
+[Error]
+enum BrokerError {
+    "HardBlockedApp",
+    "PromptInjectionDetected",
+    "PayloadPolicyViolation",
+    "RateLimitExceeded",
+    "TokenExpired",
+    "TokenReplayDetected",
+    "NodeHashMismatch",
+    "InvalidPolicyChange",
+    "VaultError",
+    "CryptoError"
+};
+
+enum RiskLevel {
+    "Level0HardBlocked",
+    "Level1AutoAllowed",
+    "Level2ExplicitConfirm"
+};
+
+enum AppPolicyTier {
+    "HardBlocked",
+    "AskBeforeSend",
+    "ReadOnly",
+    "AutoAllowed"
+};
+
+dictionary PolicyRuleEntry {
+    string package_name;
+    AppPolicyTier tier;
+    boolean is_builtin_hard_block;
+};
+
+dictionary ProposedAction {
+    string session_id;
+    string user_command;
+    string target_package;
+    string action_type;
+    string target_node_hash;
+    string window_id;
+    string display_bounds_hash;
+    string payload_text;
+    string raw_screen_context;
+    boolean is_flag_secure;
+};
+
+dictionary CapabilityToken {
+    string token_id;
+    u64 issued_at_ms;
+    u64 expires_at_ms;
+    u64 monotonic_expires_ms;
+    string nonce;
+    string target_package;
+    string action_type;
+    string target_node_hash;
+    string payload_hash;
+    u8 risk_level;
+    string user_approval_proof;
+    string broker_ed25519_sig;
+};
+
+dictionary AuditReceipt {
+    u64 seq;
+    u64 timestamp_ms;
+    string outcome;
+    string target_package;
+    string action_summary;
+    string token_id;
+    string prev_hash;
+    string entry_hash;
+    boolean screenshot_wiped;
+    string token_json;
+};
+
+dictionary SanitizedContext {
+    string boundary_tag;
+    string wrapped_text;
+    boolean threat_detected;
+    string threat_reason;
+    string matched_snippet;
+};
+
+interface AegisBroker {
+    string broker_public_key_hex();
+    RiskLevel classify_action(string target_package, string action_type, boolean is_flag_secure);
+    SanitizedContext sanitize_screen_context(string user_command, string raw_screen_text);
+    [Throws=BrokerError]
+    void validate_outbound_payload(string action_type, string payload_text);
+    [Throws=BrokerError]
+    CapabilityToken evaluate_and_mint(
+        ProposedAction action,
+        u64 now_wall_ms,
+        u64 now_monotonic_ms
+    );
+    [Throws=BrokerError]
+    boolean verify_and_burn_token(
+        CapabilityToken token,
+        string live_package,
+        string live_node_hash,
+        u64 now_monotonic_ms
+    );
+    void revoke_all_active_tokens(string reason, u64 now_wall_ms);
+    sequence<AuditReceipt> list_audit_receipts(string? filter_outcome);
+    boolean verify_audit_chain();
+    sequence<PolicyRuleEntry> list_policy_rules();
+    [Throws=BrokerError]
+    void set_app_policy_tier(
+        string package_name,
+        AppPolicyTier new_tier
+    );
+    [Throws=BrokerError]
+    void shred_vault_and_reset(string confirm_phrase);
+};

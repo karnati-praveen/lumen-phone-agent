@@ -1,0 +1,101 @@
+diff --git a/tools/mtmd/mtmd-model.cpp b/tools/mtmd/mtmd-model.cpp
+index 97dc475..3b3c6f6 100644
+--- a/tools/mtmd/mtmd-model.cpp
++++ b/tools/mtmd/mtmd-model.cpp
+@@ -24,6 +24,62 @@
+ #include <array>
+ #include <functional>
+ #include <float.h>
++#include <cstdio>
++#ifndef _WIN32
++#include <unistd.h>
++#endif
++
++namespace {
++struct MtmdBinaryStream {
++    std::ifstream fs;
++    std::FILE* fp = nullptr;
++    bool good_flag = false;
++
++    explicit MtmdBinaryStream(const std::string& path) {
++#ifndef _WIN32
++        if (path.rfind("fd://", 0) == 0) {
++            int fd_num = std::atoi(path.c_str() + 5);
++            int dup_fd = ::dup(fd_num);
++            if (dup_fd >= 0) {
++                ::lseek(dup_fd, 0, SEEK_SET);
++                fp = ::fdopen(dup_fd, "rb");
++                if (fp) {
++                    good_flag = true;
++                } else {
++                    ::close(dup_fd);
++                }
++            }
++            return;
++        }
++#endif
++        fs.open(path, std::ios::binary);
++        good_flag = static_cast<bool>(fs);
++    }
++    ~MtmdBinaryStream() { close(); }
++    void close() {
++        if (fp) { std::fclose(fp); fp = nullptr; }
++        if (fs.is_open()) fs.close();
++    }
++    explicit operator bool() const { return good_flag; }
++    void seekg(std::size_t off, std::ios_base::seekdir dir) {
++        if (fp) {
++            int whence = (dir == std::ios::cur) ? SEEK_CUR : (dir == std::ios::end ? SEEK_END : SEEK_SET);
++            ::fseeko(fp, static_cast<off_t>(off), whence);
++        } else {
++            fs.seekg(static_cast<std::streamoff>(off), dir);
++        }
++    }
++    MtmdBinaryStream& read(char* dst, std::size_t n) {
++        if (fp) {
++            good_flag = (std::fread(dst, 1, n, fp) == n);
++        } else {
++            fs.read(dst, static_cast<std::streamsize>(n));
++            good_flag = static_cast<bool>(fs);
++        }
++        return *this;
++    }
++};
++} // namespace
+ 
+ //
+ // mtmd_model_loader
+@@ -58,7 +114,24 @@ struct mtmd_model_loader {
+             /*.ctx      = */ &meta,
+         };
+ 
++#ifndef _WIN32
++        if (std::strncmp(fname, "fd://", 5) == 0) {
++            int fd_num = std::atoi(fname + 5);
++            int dup_fd = ::dup(fd_num);
++            std::FILE* fp = dup_fd >= 0 ? ::fdopen(dup_fd, "rb") : nullptr;
++            if (fp) {
++                std::rewind(fp);
++                ctx_gguf = gguf_context_ptr(gguf_init_from_file_ptr(fp, params));
++                std::fclose(fp);
++            } else if (dup_fd >= 0) {
++                ::close(dup_fd);
++            }
++        } else {
++            ctx_gguf = gguf_context_ptr(gguf_init_from_file(fname, params));
++        }
++#else
+         ctx_gguf = gguf_context_ptr(gguf_init_from_file(fname, params));
++#endif
+         if (!ctx_gguf.get()) {
+             throw std::runtime_error(mtmd_format("%s: failed to load mmproj model from %s. Does this file exist?\n", __func__, fname));
+         }
+@@ -1467,7 +1540,7 @@ struct mtmd_model_loader {
+         std::map<std::string, size_t> tensor_offset;
+         std::vector<ggml_tensor *> tensors_to_load;
+ 
+-        auto fin = open_ifstream_binary(fname);
++        MtmdBinaryStream fin(fname);
+         if (!fin) {
+             throw std::runtime_error(mtmd_format("%s: failed to open %s\n", __func__, fname.c_str()));
+         }

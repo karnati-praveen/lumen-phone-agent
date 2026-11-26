@@ -1,0 +1,4 @@
+-keep class uniffi.aegis_broker.** { *; }
+-keep class com.sun.jna.** { *; }
+-keep class com.aegis.ipc.** { *; }
+-keep class com.aegis.brain.NativeBrainBridge { *; }
