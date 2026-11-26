@@ -18,6 +18,19 @@ Lumen (built on the Aegis v2.1.0 security core) is an **on-device Android AI age
 
 ---
 
+## Live Walkthrough Demonstration
+
+<p align="center">
+  <img src="docs/media/lumen-demo.gif" alt="Lumen Offline Vision-First Agent Live Walkthrough" width="100%" />
+</p>
+
+1. **Dispatch & Guard-2M Gate** — Sanitizes prompts (`NFKC` + URI firewall) and clears `Guard-2M` in **~303 µs** before launching Chrome.
+2. **SmolVLM-500M Vision Glow & Multi-Listing Comparison** — Streams **768×768 Ashmem RGB frames (1.69 MB)** to the zero-network isolated brain process, pulses the prism edge-glyph glow while inspecting listings, and synthesizes **Best Pick**.
+3. **Resilient Multi-Step App Control** — Completes multi-step workflows (DeskClock `Start -> Lap -> Lap -> Pause -> Reset`, Contacts, Chrome, Settings) with zero mid-task dropouts.
+4. **Level-0 Hard-Rule Block** — Deterministically blocks financial/UPI apps (`com.phonepe.app`, `upi://`, `tez://`) before minting any capability token and records a SHA-256 audit receipt.
+
+---
+
 ## Architecture
 
 ```mermaid
